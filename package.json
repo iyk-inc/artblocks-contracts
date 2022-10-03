@@ -67,6 +67,7 @@
   "dependencies": {
     "@openzeppelin-0.5/contracts": "npm:@openzeppelin/contracts@2.5.1",
     "@openzeppelin-4.5/contracts": "npm:@openzeppelin/contracts@4.5.0",
+    "@openzeppelin-4.5/contracts-upgradeable": "npm:@openzeppelin/contracts-upgradeable@4.5.0",
     "@openzeppelin-4.7/contracts": "npm:@openzeppelin/contracts@4.7.1"
   }
 }
