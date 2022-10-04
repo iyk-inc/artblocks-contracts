@@ -69,24 +69,6 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
         signVerifier = verifier;
     }
 
-    function mint(address recipient, uint256 tokenId)
-        external
-        virtual
-        onlyAdmin
-    {
-        _safeMint(recipient, tokenId);
-    }
-
-    function mintBatch(address to, uint256[] calldata tokenIds)
-        external
-        virtual
-        onlyAdmin
-    {
-        for (uint256 i = 0; i < tokenIds.length; ++i) {
-            _mint(to, tokenIds[i]);
-        }
-    }
-
     function claimNFT(
         bytes memory sig,
         uint256 blockExpiry,
