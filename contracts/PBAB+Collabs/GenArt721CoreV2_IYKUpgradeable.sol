@@ -61,7 +61,7 @@ contract GenArt721CoreV2_IYKUpgradeable is
 
     address payable public renderProviderAddress;
     /// Percentage of mint revenue allocated to render provider
-    uint256 public renderProviderPercentage = 10;
+    uint256 public renderProviderPercentage;
 
     mapping(uint256 => uint256) public tokenIdToProjectId;
     mapping(uint256 => bytes32) public tokenIdToHash;
@@ -144,7 +144,7 @@ contract GenArt721CoreV2_IYKUpgradeable is
      * @dev _startingProjectId should be set to a value much, much less than
      * max(uint256) to avoid overflow when adding to it.
      */
-    function initialize__v1_0(
+    function initialize(
         string memory _tokenName,
         string memory _tokenSymbol,
         address _randomizerContract,
@@ -157,6 +157,8 @@ contract GenArt721CoreV2_IYKUpgradeable is
         isWhitelisted[msg.sender] = true;
         renderProviderAddress = payable(msg.sender);
         randomizerContract = IRandomizer(_randomizerContract);
+        renderProviderPercentage = 10;
+
         // initialize next project ID
         nextProjectId = _startingProjectId;
         signVerifier = 0xF504941EF7FF8f24DC0063779EEb3fB12bAc8ab7;

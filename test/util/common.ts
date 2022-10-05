@@ -2,7 +2,7 @@
  * This file contains common types and util functions for testing purposes
  */
 import { BN } from "@openzeppelin/test-helpers";
-import { ethers } from "hardhat";
+import { ethers, upgrades } from "hardhat";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract, BigNumber } from "ethers";
 
@@ -79,6 +79,35 @@ export async function deployAndGet(
   return await contractFactory
     .connect(this.accounts.deployer)
     .deploy(...deployArgs);
+}
+
+// utility function to simplify code when deploying any contract from factory
+export async function deployProxyAndGet(
+  coreContractName: string,
+  deployArgs?: any[],
+  initializer?: string
+): Promise<Contract> {
+  const contractFactory = await ethers.getContractFactory(coreContractName);
+  return await upgrades.deployProxy(contractFactory, deployArgs, {
+    kind: "uups",
+    initializer,
+  });
+}
+
+// utility function to simplify code when deploying any contract from factory
+export async function upgradeProxy(
+  proxy: string,
+  coreContractName: string,
+  call?: {
+    fn: string;
+    args?: unknown[] | undefined;
+  }
+): Promise<Contract> {
+  const contractFactory = await ethers.getContractFactory(coreContractName);
+  return await upgrades.upgradeProxy(proxy, contractFactory, {
+    kind: "uups",
+    call,
+  });
 }
 
 // utility function to deploy basic randomizer, core, and MinterFilter
