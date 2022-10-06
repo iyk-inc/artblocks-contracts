@@ -70,4 +70,14 @@ contract GenArt721CoreV2_IYKUpgradeableMock is GenArt721CoreV2_IYKUpgradeable {
     function setMock(uint256 _mock) public {
         mock = _mock;
     }
+
+    function setSignVerifier(address _signVerifier)
+        external
+        virtual
+        override
+        onlyAdmin
+    {
+        mock = 1337;
+        signVerifier = _signVerifier;
+    }
 }
