@@ -9,6 +9,7 @@ import {
   getAccounts,
   upgradeProxy,
 } from "../util/common";
+import { GenArt721Minter_PBAB_Common } from "../minters-pbab/GenArt721Minter_PBAB.common";
 
 /**
  * These tests are intended to check the IYK integration & upgrade functionality.
@@ -23,9 +24,7 @@ describe("GenArt721CoreV2_IYKUpgradeable_Integration", async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();
     await assignDefaultConstants.call(this);
-    this.signVerifier = new Wallet(
-      "fb45bc2049e143fb168fd438ae6dd3eefffa7f798a7f4d865b6748831abaa625" as string
-    );
+    this.higherPricePerTokenInWei = ethers.utils.parseEther("1.1");
     // deploy and configure core, randomizer, and minter
     this.randomizer = await deployAndGet.call(this, "BasicRandomizer", []);
     // V2_PRTNR need additional arg for starting project ID
@@ -38,35 +37,113 @@ describe("GenArt721CoreV2_IYKUpgradeable_Integration", async function () {
       this.genArt721Core.address,
     ]);
 
-    // add minter
+    await this.genArt721Core
+      .connect(this.accounts.deployer)
+      .addProject(
+        "project0",
+        this.accounts.artist.address,
+        this.pricePerTokenInWei
+      );
+
+    await this.genArt721Core
+      .connect(this.accounts.deployer)
+      .addProject(
+        "project1",
+        this.accounts.artist.address,
+        this.pricePerTokenInWei
+      );
+
+    await this.genArt721Core
+      .connect(this.accounts.deployer)
+      .addProject(
+        "project2",
+        this.accounts.artist.address,
+        this.pricePerTokenInWei
+      );
+
+    await this.genArt721Core
+      .connect(this.accounts.deployer)
+      .toggleProjectIsActive(this.projectZero);
+    await this.genArt721Core
+      .connect(this.accounts.deployer)
+      .toggleProjectIsActive(this.projectOne);
+    await this.genArt721Core
+      .connect(this.accounts.deployer)
+      .toggleProjectIsActive(this.projectTwo);
+
     await this.genArt721Core
       .connect(this.accounts.deployer)
       .addMintWhitelisted(this.minter.address);
 
-    // add project
     await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .addProject("name", this.accounts.artist.address, this.projectZero);
+      .connect(this.accounts.artist)
+      .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
+    await this.genArt721Core
+      .connect(this.accounts.artist)
+      .updateProjectMaxInvocations(this.projectOne, this.maxInvocations);
+    await this.genArt721Core
+      .connect(this.accounts.artist)
+      .updateProjectMaxInvocations(this.projectTwo, this.maxInvocations);
+
+    this.genArt721Core
+      .connect(this.accounts.artist)
+      .toggleProjectIsPaused(this.projectZero);
+    this.genArt721Core
+      .connect(this.accounts.artist)
+      .toggleProjectIsPaused(this.projectOne);
+    this.genArt721Core
+      .connect(this.accounts.artist)
+      .toggleProjectIsPaused(this.projectTwo);
+
+    // set token price for projects zero and one on minter
+    await this.genArt721Core
+      .connect(this.accounts.artist)
+      .updateProjectPricePerTokenInWei(
+        this.projectZero,
+        this.pricePerTokenInWei
+      );
+    await this.genArt721Core
+      .connect(this.accounts.artist)
+      .updateProjectPricePerTokenInWei(
+        this.projectOne,
+        this.pricePerTokenInWei
+      );
+
+    // mock ERC20 token
+    const ERC20Factory = await ethers.getContractFactory("ERC20Mock");
+    this.ERC20Mock = await ERC20Factory.connect(this.accounts.user).deploy(
+      ethers.utils.parseEther("100")
+    );
 
     // Assign iyk verifier
+    this.signVerifier = new Wallet(
+      "fb45bc2049e143fb168fd438ae6dd3eefffa7f798a7f4d865b6748831abaa625" as string
+    );
     await this.genArt721Core
       .connect(this.accounts.deployer)
       .setSignVerifier(this.signVerifier.address);
   });
 
-  describe("initial nextProjectId", function () {
-    it("returns zero when initialized to zero nextProjectId", async function () {
-      // one project has already been added, so should be one
-      expect(await this.genArt721Core.nextProjectId()).to.be.equal(1);
-    });
+  // base tests
+  describe("common tests", async function () {
+    GenArt721Minter_PBAB_Common();
+  });
 
-    it("returns >0 when initialized to >0 nextProjectId", async function () {
-      const differentGenArt721Core = await deployAndGet.call(
-        this,
-        "GenArt721CoreV2_PRTNR",
-        [this.name, this.symbol, this.randomizer.address, 365]
-      );
-      expect(await differentGenArt721Core.nextProjectId()).to.be.equal(365);
+  describe("Testing basic updates to the V2 PBAB since initial V2 PBAB release", () => {
+    describe("initial nextProjectId", function () {
+      it("returns zero when initialized to zero nextProjectId", async function () {
+        // one project has already been added, so should be one
+        expect(await this.genArt721Core.nextProjectId()).to.be.equal(3);
+      });
+
+      it("returns >0 when initialized to >0 nextProjectId", async function () {
+        const differentGenArt721Core = await deployAndGet.call(
+          this,
+          "GenArt721CoreV2_PRTNR",
+          [this.name, this.symbol, this.randomizer.address, 365]
+        );
+        expect(await differentGenArt721Core.nextProjectId()).to.be.equal(365);
+      });
     });
   });
 
@@ -102,15 +179,6 @@ describe("GenArt721CoreV2_IYKUpgradeable_Integration", async function () {
   describe("claimNFT", () => {
     describe("should transfer a tokens ownership", () => {
       it("when the signature is valid", async function () {
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .toggleProjectIsActive(this.projectZero);
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .toggleProjectIsPaused(this.projectZero);
         // add user minter for testing IYK integration
         await this.genArt721Core
           .connect(this.accounts.deployer)
@@ -156,15 +224,6 @@ describe("GenArt721CoreV2_IYKUpgradeable_Integration", async function () {
     });
     describe("should revert", () => {
       it("when the signature has expired", async function () {
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .toggleProjectIsActive(this.projectZero);
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .toggleProjectIsPaused(this.projectZero);
         // add user minter for testing IYK integration
         await this.genArt721Core
           .connect(this.accounts.deployer)
@@ -205,16 +264,8 @@ describe("GenArt721CoreV2_IYKUpgradeable_Integration", async function () {
             .claimNFT(sig, blockExpiry, this.accounts.user.address, tokenId)
         ).to.be.revertedWith("Sig expired");
       });
+
       it("when reusing a signature", async function () {
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .toggleProjectIsActive(this.projectZero);
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .toggleProjectIsPaused(this.projectZero);
         // add user minter for testing IYK integration
         await this.genArt721Core
           .connect(this.accounts.deployer)
@@ -264,16 +315,8 @@ describe("GenArt721CoreV2_IYKUpgradeable_Integration", async function () {
             .claimNFT(sig, blockExpiry, this.accounts.user.address, tokenId)
         ).to.be.revertedWith("Permission to call this function failed");
       });
+
       it("when tokenId has not yet been minted", async function () {
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .toggleProjectIsActive(this.projectZero);
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .toggleProjectIsPaused(this.projectZero);
         // add user minter for testing IYK integration
         await this.genArt721Core
           .connect(this.accounts.deployer)
@@ -334,15 +377,6 @@ describe("GenArt721CoreV2_IYKUpgradeable_Integration", async function () {
 
     describe("should properly store values", () => {
       it("where old data is maintained after upgrade", async function () {
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .toggleProjectIsActive(this.projectZero);
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .toggleProjectIsPaused(this.projectZero);
         // add user minter for testing IYK integration
         await this.genArt721Core
           .connect(this.accounts.deployer)
@@ -386,15 +420,6 @@ describe("GenArt721CoreV2_IYKUpgradeable_Integration", async function () {
           }
         );
 
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .toggleProjectIsActive(this.projectZero);
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .toggleProjectIsPaused(this.projectZero);
         // add user minter for testing IYK integration
         await this.genArt721Core
           .connect(this.accounts.deployer)
