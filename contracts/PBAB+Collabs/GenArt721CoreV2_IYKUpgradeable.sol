@@ -15,6 +15,8 @@ pragma solidity 0.8.9;
 
 /**
  * @title Powered by Art Blocks ERC-721 core contract.
+ * Support for IYK pull mechanism to transfer tokens based on verified signatures
+ * Upgradeable to futureproof the contract
  * @author Art Blocks Inc.
  */
 contract GenArt721CoreV2_IYKUpgradeable is
@@ -77,12 +79,13 @@ contract GenArt721CoreV2_IYKUpgradeable is
     /// next project ID to be created
     uint256 public nextProjectId;
 
-    // IYK signer for pull mechanism
+    // Expected signer of claim signatures
     address public signVerifier;
 
+    // Nonce per user, used to prevent replay signature attacks
     mapping(address => uint256) public claimNonces;
 
-    // UUPS upgrade version
+    // UUPS minor upgrade version
     uint16 public minorVersion;
 
     modifier onlyValidTokenId(uint256 _tokenId) {
@@ -161,7 +164,7 @@ contract GenArt721CoreV2_IYKUpgradeable is
 
         // initialize next project ID
         nextProjectId = _startingProjectId;
-        signVerifier = 0xF504941EF7FF8f24DC0063779EEb3fB12bAc8ab7;
+        signVerifier = 0xfC95c9Ffba80CB60f76C653EA8E5CE01253b6C6a;
     }
 
     // Overidden to guard against which users can access
@@ -240,12 +243,12 @@ contract GenArt721CoreV2_IYKUpgradeable is
     }
 
     /**
-     * @notice Pulls (transfers) a token from the old owner to the new owner based on a signature
-     * @param _sig The signature signed by signVerifer authenticating the action.
-     * @param _blockExpiry The block number which the signature signed. Acts as the expiry time of the pull permission.
-     * @param _recipient The address receiving the token after the pull
-     * @param _tokenId The token being pulled
-     * @dev Any user can be a sender. The signature verification is what gates the pull mechanism.
+     * @notice Transfers a token from its owner to the recipient
+     * @param _sig The ECDSA signature signer by the signVerifier
+     * @param _blockExpiry As of which block the signature is no longer valid
+     * @param _recipient The address who receives the token
+     * @param _tokenId The tokenId being claimed
+     * @dev ECDSA signatures are used to verify the permission to claim a NFT
      */
     function claimNFT(
         bytes memory _sig,
@@ -273,33 +276,33 @@ contract GenArt721CoreV2_IYKUpgradeable is
     }
 
     /**
-     * @notice Override transfer from functions and make them useless
+     * @notice transferFrom has been overriden to make it useless
      * @dev Behavior replaced by pull mechanism in claimNFT
      */
     function transferFrom(
-        address from,
-        address to,
-        uint256 tokenId
+        address _from,
+        address _to,
+        uint256 _tokenId
     ) public virtual override {}
 
     /**
-     * @notice Override transfer from functions and make them useless
+     * @notice safeTransferFrom has been overriden to make it useless
      * @dev Behavior replaced by pull mechanism in claimNFT
      */
     function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId
+        address _from,
+        address _to,
+        uint256 _tokenId
     ) public virtual override {}
 
     /**
-     * @notice Override transfer from functions and make them useless
+     * @notice safeTransferFrom has been overriden to make it useless
      * @dev Behavior replaced by pull mechanism in claimNFT
      */
     function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId,
+        address _from,
+        address _to,
+        uint256 _tokenId,
         bytes memory _data
     ) public virtual override {}
 
@@ -644,18 +647,21 @@ contract GenArt721CoreV2_IYKUpgradeable is
     }
 
     /**
-     * @notice Sets the signVerifier who signs messages granting permission to pull a token into a users wallet.
-     * @param _verifier The address assigned to be the signer
-     * @dev This signVerifier is setup by IYK
+     * @notice Updates the signVerifier to a new relayer address
+     * @param _verifier The ECDSA signature signer by the signVerifier
+     * @dev This verifier is who signers the ECDSA signatures used by claimNFT
      */
     function setSignVerifier(address _verifier) external virtual onlyAdmin {
         signVerifier = _verifier;
     }
 
     /**
-     * @notice Returns the recipient's nonce.
-     * @param _recipient User whose nonce is being checked
-     * @return nonce The recipient's nonce
+     * @notice Returns the current claim nonce of a address
+     * @param _recipient The address whose nonce is being fetched
+     * @return nonce The addresses current nonce
+     * @dev This view exposes the nonce as it will be required for the signature.
+     * By including a nonce in the signature and updating the nonce on every claim,
+     * we prevent replay signature attacks, as signatures can only be used once.
      */
     function getClaimNonce(address _recipient)
         external
@@ -667,11 +673,12 @@ contract GenArt721CoreV2_IYKUpgradeable is
     }
 
     /**
-     * @notice Returns the hash to be signed by the signVerifier during pull.
-     * @param _blockExpiry User whose nonce is being checked
-     * @param _recipient The recipient of the transfer
-     * @param _tokenId The tokenId to be transferred
-     * @return hash The hash being signed
+     * @notice Returns the hash that we expect was signed in claimNFT.
+     * @param _blockExpiry As of which block the signature is no longer valid
+     * @param _recipient The address who receives the token
+     * @param _tokenId The tokenId being claimed
+     * @return hash A bytes32 hash that is signed by the signVerifier
+     * @dev claimNFT uses this view to get the expected message to have been signed.
      */
     function getClaimSigningHash(
         uint256 _blockExpiry,
