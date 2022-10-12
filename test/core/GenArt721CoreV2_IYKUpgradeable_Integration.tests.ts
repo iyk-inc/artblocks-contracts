@@ -122,6 +122,11 @@ describe("GenArt721CoreV2_IYKUpgradeable_Integration", async function () {
     await this.genArt721Core
       .connect(this.accounts.deployer)
       .setSignVerifier(this.signVerifier.address);
+
+    // add user minter for testing IYK integration
+    await this.genArt721Core
+      .connect(this.accounts.deployer)
+      .addMintWhitelisted(this.accounts.additional.address);
   });
 
   // base tests
@@ -179,11 +184,6 @@ describe("GenArt721CoreV2_IYKUpgradeable_Integration", async function () {
   describe("claimNFT", () => {
     describe("should transfer a tokens ownership", () => {
       it("when the signature is valid", async function () {
-        // add user minter for testing IYK integration
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .addMintWhitelisted(this.accounts.additional.address);
-
         // Mint token to owner
         const tokenId = (
           await this.genArt721Core
@@ -224,11 +224,6 @@ describe("GenArt721CoreV2_IYKUpgradeable_Integration", async function () {
     });
     describe("should revert", () => {
       it("when the signature has expired", async function () {
-        // add user minter for testing IYK integration
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .addMintWhitelisted(this.accounts.additional.address);
-
         // Mint token to owner
         const tokenId = (
           await this.genArt721Core
@@ -266,11 +261,6 @@ describe("GenArt721CoreV2_IYKUpgradeable_Integration", async function () {
       });
 
       it("when reusing a signature", async function () {
-        // add user minter for testing IYK integration
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .addMintWhitelisted(this.accounts.additional.address);
-
         // Mint token to owner
         const tokenId = (
           await this.genArt721Core
@@ -317,11 +307,6 @@ describe("GenArt721CoreV2_IYKUpgradeable_Integration", async function () {
       });
 
       it("when tokenId has not yet been minted", async function () {
-        // add user minter for testing IYK integration
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .addMintWhitelisted(this.accounts.additional.address);
-
         // Mint token to owner
         await this.genArt721Core
           .connect(this.accounts.additional)
@@ -377,11 +362,6 @@ describe("GenArt721CoreV2_IYKUpgradeable_Integration", async function () {
 
     describe("should properly store values", () => {
       it("where old data is maintained after upgrade", async function () {
-        // add user minter for testing IYK integration
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .addMintWhitelisted(this.accounts.additional.address);
-
         // Mint token to owner
         const tokenId = (
           await this.genArt721Core
@@ -419,11 +399,6 @@ describe("GenArt721CoreV2_IYKUpgradeable_Integration", async function () {
             args: [BigNumber.from(0)],
           }
         );
-
-        // add user minter for testing IYK integration
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .addMintWhitelisted(this.accounts.additional.address);
 
         // Mint token to owner
         const tokenId = (

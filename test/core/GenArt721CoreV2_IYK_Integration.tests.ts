@@ -48,6 +48,21 @@ describe("GenArt721CoreV2_IYK_Integration", async function () {
     await this.genArt721Core
       .connect(this.accounts.deployer)
       .setSignVerifier(this.signVerifier.address);
+
+    await this.genArt721Core
+      .connect(this.accounts.deployer)
+      .toggleProjectIsActive(this.projectZero);
+    await this.genArt721Core
+      .connect(this.accounts.artist)
+      .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
+    await this.genArt721Core
+      .connect(this.accounts.artist)
+      .toggleProjectIsPaused(this.projectZero);
+
+    // add user minter for testing IYK integration
+    await this.genArt721Core
+      .connect(this.accounts.deployer)
+      .addMintWhitelisted(this.accounts.additional.address);
   });
 
   describe("getClaimSigningHash", () => {
@@ -82,20 +97,6 @@ describe("GenArt721CoreV2_IYK_Integration", async function () {
   describe("claimNFT", () => {
     describe("should transfer a tokens ownership", () => {
       it("when the signature is valid", async function () {
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .toggleProjectIsActive(this.projectZero);
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .toggleProjectIsPaused(this.projectZero);
-        // add user minter for testing IYK integration
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .addMintWhitelisted(this.accounts.additional.address);
-
         // Mint token to owner
         const tokenId = (
           await this.genArt721Core
@@ -136,20 +137,6 @@ describe("GenArt721CoreV2_IYK_Integration", async function () {
     });
     describe("should revert", () => {
       it("when the signature has expired", async function () {
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .toggleProjectIsActive(this.projectZero);
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .toggleProjectIsPaused(this.projectZero);
-        // add user minter for testing IYK integration
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .addMintWhitelisted(this.accounts.additional.address);
-
         // Mint token to owner
         const tokenId = (
           await this.genArt721Core
@@ -186,20 +173,6 @@ describe("GenArt721CoreV2_IYK_Integration", async function () {
         ).to.be.revertedWith("Sig expired");
       });
       it("when reusing a signature", async function () {
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .toggleProjectIsActive(this.projectZero);
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .toggleProjectIsPaused(this.projectZero);
-        // add user minter for testing IYK integration
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .addMintWhitelisted(this.accounts.additional.address);
-
         // Mint token to owner
         const tokenId = (
           await this.genArt721Core
@@ -245,20 +218,6 @@ describe("GenArt721CoreV2_IYK_Integration", async function () {
         ).to.be.revertedWith("Permission to call this function failed");
       });
       it("when tokenId has not yet been minted", async function () {
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .toggleProjectIsActive(this.projectZero);
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .toggleProjectIsPaused(this.projectZero);
-        // add user minter for testing IYK integration
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .addMintWhitelisted(this.accounts.additional.address);
-
         // Mint token to owner
         await this.genArt721Core
           .connect(this.accounts.additional)
