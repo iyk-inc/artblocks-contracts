@@ -4,6 +4,7 @@
 import "./GenArt721CoreV2_PBAB.sol";
 
 import "@openzeppelin-4.5/contracts/utils/cryptography/ECDSA.sol";
+import "./iyk/ISignVerifierRegistry.sol";
 
 pragma solidity 0.8.9;
 
@@ -15,8 +16,9 @@ pragma solidity 0.8.9;
 contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
     using ECDSA for bytes32;
 
-    // Expected signer of claim signatures
-    address public signVerifier;
+    // Address of registry that resolves the signVerifier
+    ISignVerifierRegistry public signVerifierRegistry;
+    bytes32 public signVerifierId;
 
     // Nonce per user, used to prevent replay signature attacks
     mapping(address => uint256) public claimNonces;
@@ -34,7 +36,9 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
         string memory _tokenName,
         string memory _tokenSymbol,
         address _randomizerContract,
-        uint256 _startingProjectId
+        uint256 _startingProjectId,
+        address _signVerifier,
+        bytes32 _signVerifierId
     )
         GenArt721CoreV2_PBAB(
             _tokenName,
@@ -43,7 +47,8 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
             _startingProjectId
         )
     {
-        signVerifier = 0xfC95c9Ffba80CB60f76C653EA8E5CE01253b6C6a;
+        signVerifierRegistry = ISignVerifierRegistry(_signVerifier);
+        signVerifierId = _signVerifierId;
     }
 
     /**
@@ -65,6 +70,9 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
             _recipient,
             _tokenId
         ).toEthSignedMessageHash();
+        address signVerifier = signVerifierRegistry.getSignVerifier(
+            signVerifierId
+        );
         require(
             ECDSA.recover(message, _sig) == signVerifier,
             "Permission to call this function failed"
@@ -79,13 +87,26 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
         _safeTransfer(from, _recipient, _tokenId, "");
     }
 
-    /**
-     * @notice Updates the signVerifier to a new relayer address
-     * @param _verifier The ECDSA signature signer by the signVerifier
-     * @dev This verifier is who signers the ECDSA signatures used by claimNFT
-     */
-    function setSignVerifier(address _verifier) external virtual onlyAdmin {
-        signVerifier = _verifier;
+    /// @notice Updates the sign verifier registry address
+    /// @dev Requires the DEFAULT_ADMIN_ROLE to call
+    /// @param _signVerifierRegistry The address the new registry
+    function setSignVerifierRegistry(address _signVerifierRegistry)
+        external
+        virtual
+        onlyAdmin
+    {
+        signVerifierRegistry = ISignVerifierRegistry(_signVerifierRegistry);
+    }
+
+    /// @notice Updates the sign verifier id
+    /// @dev Requires the DEFAULT_ADMIN_ROLE to call
+    /// @param _signVerifierId The new id to use when resolving a sign verifier
+    function setSignVerifierId(bytes32 _signVerifierId)
+        external
+        virtual
+        onlyAdmin
+    {
+        signVerifierId = _signVerifierId;
     }
 
     /**
@@ -128,14 +149,6 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
                     claimNonces[_recipient]
                 )
             );
-    }
-
-    /**
-     * @notice Returns the address who signs messages granting permission to pull a token into a users wallet.
-     * @return signVerifier The address of the sign verifier
-     */
-    function getSignVerifier() external view virtual returns (address) {
-        return signVerifier;
     }
 
     /**

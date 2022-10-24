@@ -23,12 +23,23 @@ describe("GenArt721CoreV2_IYK_Integration", async function () {
     );
     // deploy and configure core, randomizer, and minter
     this.randomizer = await deployAndGet.call(this, "BasicRandomizer", []);
+
+    // assign the iyk sign verifier
+    this.signVerifierRegistry = await deployAndGet.call(
+      this,
+      "SignVerifierRegistryMock",
+      []
+    );
+    this.iykId = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("IYK"));
+
     // V2_PRTNR need additional arg for starting project ID
     this.genArt721Core = await deployAndGet.call(this, "GenArt721CoreV2_IYK", [
       this.name,
       this.symbol,
       this.randomizer.address,
       0,
+      this.signVerifierRegistry.address,
+      this.iykId,
     ]);
     this.minter = await deployAndGet.call(this, "GenArt721Minter_PBAB", [
       this.genArt721Core.address,
@@ -44,11 +55,6 @@ describe("GenArt721CoreV2_IYK_Integration", async function () {
       .connect(this.accounts.deployer)
       .addProject("name", this.accounts.artist.address, this.projectZero);
 
-    // Assign iyk verifier
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .setSignVerifier(this.signVerifier.address);
-
     await this.genArt721Core
       .connect(this.accounts.deployer)
       .toggleProjectIsActive(this.projectZero);
@@ -63,6 +69,12 @@ describe("GenArt721CoreV2_IYK_Integration", async function () {
     await this.genArt721Core
       .connect(this.accounts.deployer)
       .addMintWhitelisted(this.accounts.additional.address);
+
+    // register sign verifier for testing iyk integration
+    await this.signVerifierRegistry.register(
+      this.iykId,
+      this.signVerifier.address
+    );
   });
 
   describe("getClaimSigningHash", () => {
