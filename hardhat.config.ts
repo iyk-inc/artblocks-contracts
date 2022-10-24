@@ -7,7 +7,6 @@ import "@nomiclabs/hardhat-solhint";
 import "hardhat-contract-sizer";
 import "@nomiclabs/hardhat-etherscan";
 import "hardhat-docgen";
-import "@openzeppelin/hardhat-upgrades";
 
 const MAINNET_JSON_RPC_PROVIDER_URL = process.env.MAINNET_JSON_RPC_PROVIDER_URL;
 const GOERLI_JSON_RPC_PROVIDER_URL = process.env.GOERLI_JSON_RPC_PROVIDER_URL;
