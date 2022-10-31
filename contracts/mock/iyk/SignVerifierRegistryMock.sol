@@ -10,7 +10,7 @@ contract SignVerifierRegistryMock {
         signVerifiers[id] = signVerifier;
     }
 
-    function getSignVerifier(bytes32 id) public view returns (address) {
+    function get(bytes32 id) public view returns (address) {
         return signVerifiers[id];
     }
 }

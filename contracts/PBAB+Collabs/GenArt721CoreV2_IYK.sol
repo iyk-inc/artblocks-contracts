@@ -29,8 +29,8 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
      * @param _tokenSymbol Token symbol.
      * @param _randomizerContract Randomizer contract.
      * @param _startingProjectId The initial next project ID.
-     * @param _signVerifierRegistry Address of registry that resolves the signVerifierId
-     * @param _signVerifierId ID of the signVerifier
+     * @param _signVerifierRegistry Address of registry that resolves the signVerifierId.
+     * @param _signVerifierId ID of the signVerifier.
      * @dev _startingProjectId should be set to a value much, much less than
      * max(uint256) to avoid overflow when adding to it.
      */
@@ -72,7 +72,7 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
             _recipient,
             _tokenId
         ).toEthSignedMessageHash();
-        address signVerifier = signVerifierRegistry.getSignVerifier(
+        address signVerifier = signVerifierRegistry.get(
             signVerifierId
         );
         require(
@@ -144,13 +144,10 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
         signVerifierRegistry = ISignVerifierRegistry(_signVerifierRegistry);
     }
 
-    /// @notice Updates the sign verifier id
-    /// @dev Requires the DEFAULT_ADMIN_ROLE to call
-    /// @param _signVerifierId The new id to use when resolving a sign verifier
     /** 
      * @notice Updates the ID of the sign verifier
      * @dev Requires the DEFAULT_ADMIN_ROLE to call
-     * @param _signVerifierRegistry The address the new registry
+     * @param _signVerifierId The ID of the new sign verifier
      */
     function setSignVerifierId(bytes32 _signVerifierId)
         external
@@ -158,6 +155,13 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
         onlyAdmin
     {
         signVerifierId = _signVerifierId;
+    }
+
+    /**
+     * @notice Returns the address of the sign verifier
+     */
+    function getSignVerifier() external view returns (address) {
+        return signVerifierRegistry.get(signVerifierId);
     }
 
     /**

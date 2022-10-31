@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.12;
 
-interface ISignVerifierRegistry {
+interface ISignVerifierRegistryMock {
   function register(bytes32 id, address signVerifier) external;
 
   function update(bytes32 id, address signVerifier) external;
