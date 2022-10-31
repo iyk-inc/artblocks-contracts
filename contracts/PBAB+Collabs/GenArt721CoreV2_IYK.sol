@@ -29,6 +29,8 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
      * @param _tokenSymbol Token symbol.
      * @param _randomizerContract Randomizer contract.
      * @param _startingProjectId The initial next project ID.
+     * @param _signVerifierRegistry Address of registry that resolves the signVerifierId
+     * @param _signVerifierId ID of the signVerifier
      * @dev _startingProjectId should be set to a value much, much less than
      * max(uint256) to avoid overflow when adding to it.
      */
@@ -37,7 +39,7 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
         string memory _tokenSymbol,
         address _randomizerContract,
         uint256 _startingProjectId,
-        address _signVerifier,
+        address _signVerifierRegistry,
         bytes32 _signVerifierId
     )
         GenArt721CoreV2_PBAB(
@@ -47,15 +49,15 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
             _startingProjectId
         )
     {
-        signVerifierRegistry = ISignVerifierRegistry(_signVerifier);
+        signVerifierRegistry = ISignVerifierRegistry(_signVerifierRegistry);
         signVerifierId = _signVerifierId;
     }
 
     /**
      * @notice Transfers a token from its owner to the recipient
-     * @param _sig The ECDSA signature signer by the signVerifier
-     * @param _blockExpiry As of which block the signature is no longer valid
-     * @param _recipient The address who receives the token
+     * @param _sig The result of getClaimSigningHash signed by the signVerifier
+     * @param _blockExpiry The block as of which the signature is no longer valid
+     * @param _recipient The address that receives the token
      * @param _tokenId The tokenId being claimed
      * @dev ECDSA signatures are used to verify the permission to claim a NFT
      */
@@ -85,28 +87,6 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
         claimNonces[_recipient]++;
 
         _safeTransfer(from, _recipient, _tokenId, "");
-    }
-
-    /// @notice Updates the sign verifier registry address
-    /// @dev Requires the DEFAULT_ADMIN_ROLE to call
-    /// @param _signVerifierRegistry The address the new registry
-    function setSignVerifierRegistry(address _signVerifierRegistry)
-        external
-        virtual
-        onlyAdmin
-    {
-        signVerifierRegistry = ISignVerifierRegistry(_signVerifierRegistry);
-    }
-
-    /// @notice Updates the sign verifier id
-    /// @dev Requires the DEFAULT_ADMIN_ROLE to call
-    /// @param _signVerifierId The new id to use when resolving a sign verifier
-    function setSignVerifierId(bytes32 _signVerifierId)
-        external
-        virtual
-        onlyAdmin
-    {
-        signVerifierId = _signVerifierId;
     }
 
     /**
@@ -149,6 +129,35 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
                     claimNonces[_recipient]
                 )
             );
+    }
+
+    /** 
+     * @notice Updates the sign verifier registry address
+     * @param _signVerifierRegistry The address the new registry
+     * @dev Requires the DEFAULT_ADMIN_ROLE to call
+     */
+    function setSignVerifierRegistry(address _signVerifierRegistry)
+        external
+        virtual
+        onlyAdmin
+    {
+        signVerifierRegistry = ISignVerifierRegistry(_signVerifierRegistry);
+    }
+
+    /// @notice Updates the sign verifier id
+    /// @dev Requires the DEFAULT_ADMIN_ROLE to call
+    /// @param _signVerifierId The new id to use when resolving a sign verifier
+    /** 
+     * @notice Updates the ID of the sign verifier
+     * @dev Requires the DEFAULT_ADMIN_ROLE to call
+     * @param _signVerifierRegistry The address the new registry
+     */
+    function setSignVerifierId(bytes32 _signVerifierId)
+        external
+        virtual
+        onlyAdmin
+    {
+        signVerifierId = _signVerifierId;
     }
 
     /**
