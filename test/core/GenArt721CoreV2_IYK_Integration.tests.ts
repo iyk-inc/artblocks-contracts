@@ -106,6 +106,50 @@ describe("GenArt721CoreV2_IYK_Integration", async function () {
     });
   });
 
+  describe("signVerifier", () => {
+    describe("getSignVerifier should return the correct verifier address", () => {
+      it("when called", async function () {
+        const signVerifier = await this.genArt721Core.getSignVerifier();
+        expect(signVerifier).to.equal(this.signVerifier.address);
+      });
+    });
+
+    describe("signVerifierRegistry should return the correct registry address", () => {
+      it("when called", async function () {
+        const signVerifierRegistry =
+          await this.genArt721Core.signVerifierRegistry();
+        expect(signVerifierRegistry).to.equal(
+          this.signVerifierRegistry.address
+        );
+      });
+    });
+
+    describe("setSignVerifierId should change the verifier address", () => {
+      it("when called", async function () {
+        const newId = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("NEW"));
+        const newVerifier = this.accounts.user.address;
+
+        await this.signVerifierRegistry.register(newId, newVerifier);
+        await this.genArt721Core.setSignVerifierId(newId);
+
+        const signVerifier = await this.genArt721Core.getSignVerifier();
+        expect(signVerifier).to.equal(newVerifier);
+      });
+    });
+
+    describe("setSignVerifierRegistry should change the registry address", () => {
+      it("when called", async function () {
+        await this.genArt721Core.setSignVerifierRegistry(
+          this.accounts.additional.address
+        );
+
+        const signVerifierRegistry =
+          await this.genArt721Core.signVerifierRegistry();
+        expect(signVerifierRegistry).to.equal(this.accounts.additional.address);
+      });
+    });
+  });
+
   describe("claimNFT", () => {
     describe("should transfer a tokens ownership", () => {
       it("when the signature is valid", async function () {
